@@ -141,7 +141,11 @@ class Test_reset_time:
 
 
 class Test_run_daily:
-    def test_thing(self, time_travel, automation):
-        def func(kwargs):
-            pass
-        automation.run_daily(func, start=datetime.time(12))
+    def test_run_daily_runs_for_several_days(self, time_travel, automation):
+        callback = mock.Mock()
+        automation.run_daily(callback, start=datetime.time(18))
+        days_to_run = 10
+        for i in range(days_to_run):
+            time_travel.fast_forward().to(datetime.time(18))
+            callback.assert_called()
+        assert callback.call_count == days_to_run

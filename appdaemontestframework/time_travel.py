@@ -101,11 +101,12 @@ class UnitsWrapper:
 
 class CallbackInfo:
     """Class to hold info about a scheduled callback"""
-    def __init__(self, callback_function, kwargs, run_date_time):
+    def __init__(self, callback_function, kwargs, run_date_time, interval):
         self.handle = str(uuid.uuid4())
         self.run_date_time = run_date_time
         self.callback_function = callback_function
         self.kwargs = kwargs
+        self.interval = interval
 
     def __call__(self):
         self.callback_function(self.kwargs)
@@ -169,7 +170,8 @@ class SchedulerMocks:
     ### Internal functions
     def _queue_calllback(self, callback_function, kwargs, run_date_time):
         """queue a new callback and return its handle"""
-        new_callback = CallbackInfo(callback_function, kwargs, run_date_time)
+        interval = kwargs.get("interval", 0)
+        new_callback = CallbackInfo(callback_function, kwargs, run_date_time, interval)
         if new_callback.run_date_time < self.now:
             raise ValueError("Can not schedule events in the past")
         self.all_registered_callbacks.append(new_callback)
@@ -179,13 +181,20 @@ class SchedulerMocks:
         """run all callbacks scheduled between now and target_datetime"""
         if target_datetime <= self.now:
             raise ValueError("You can not fast forward to a time in the past.")
-        callbacks_to_run = [x for x in self.all_registered_callbacks if x.run_date_time <= target_datetime]
-        # sort so we call them in the order from oldest to newest
-        callbacks_to_run.sort(key=lambda cb: cb.run_date_time)
 
-        for callback in callbacks_to_run:
+        while True:
+            callbacks_to_run = [x for x in self.all_registered_callbacks if x.run_date_time <= target_datetime]
+            if not callbacks_to_run:
+                break
+            # sort so we call them in the order from oldest to newest
+            callbacks_to_run.sort(key=lambda cb: cb.run_date_time)
+            # dispatch the oldest callback
+            callback = callbacks_to_run[0]
             self.now = callback.run_date_time
             callback()
-            self.all_registered_callbacks.remove(callback)
+            if callback.interval > 0:
+                callback.run_date_time += datetime.timedelta(seconds=callback.interval)
+            else:
+                self.all_registered_callbacks.remove(callback)
 
         self.now = target_datetime
