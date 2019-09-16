@@ -28,7 +28,7 @@ class TimeTravelWrapper:
         """
         self.scheduler_mocks.reset_time(time)
 
-    def fast_forward(self, duration):
+    def fast_forward(self, duration=None):
         """
         Simulate going forward in time.
 
@@ -42,8 +42,15 @@ class TimeTravelWrapper:
         > time_travel.fast_forward(10).minutes()
         > # Or
         > time_travel.fast_forward(30).seconds()
+        > # or
+        > time_travel.fast_forward(3).hours()
+        > # or
+        > time_travel.fast_forward().to(datetime.time(14, 55))
         """
-        return UnitsWrapper(duration, self._fast_forward_seconds)
+        if duration:
+            return UnitsWrapper(duration, self._fast_forward_seconds)
+        else:
+            return AbsoluteWrapper(self.scheduler_mocks.fast_forward)
 
     def assert_current_time(self, expected_current_time):
         """
@@ -58,12 +65,19 @@ class TimeTravelWrapper:
         """
         return UnitsWrapper(expected_current_time, self._assert_current_time_seconds)
 
-
     def _fast_forward_seconds(self, seconds_to_fast_forward):
         self.scheduler_mocks.fast_forward(datetime.timedelta(seconds=seconds_to_fast_forward))
 
     def _assert_current_time_seconds(self, expected_seconds_from_start):
         assert self.scheduler_mocks.elapsed_seconds() == expected_seconds_from_start
+
+
+class AbsoluteWrapper:
+    def __init__(self, function_for_to_set_absolute_time):
+        self.function_for_to_set_absolute_time = function_for_to_set_absolute_time
+
+    def to(self, time):
+        self.function_for_to_set_absolute_time(time)
 
 
 class UnitsWrapper:
@@ -136,13 +150,25 @@ class SchedulerMocks:
         """Clears all currently registed callbacks"""
         self.all_registered_callbacks = []
 
-    def fast_forward(self, time_delta):
-        self._run_callbacks_and_advance_time(self.now + time_delta)
+    def fast_forward(self, time):
+        """Fastforward time and invoke callbacks. time can be a timedelta, time, or datetime"""
+        if type(time) == datetime.timedelta:
+            target_datetime = self.now + time
+        elif type(time) == datetime.time:
+            if time > self.now.time():
+                target_time = datetime.datetime.combine(time.now.date, time)
+            else:
+                # handle wrap around to next day if time is in the past already
+                target_date = self.now.date() + datetime.timedelta(days=1)
+                target_datetime = datetime.combine(target_date, time)
+        elif type(time) == datetime.datetime:
+            target_datetime = time
+        self._run_callbacks_and_advance_time(target_datetime)
 
     ### Internal functions
-    def _run_callbacks_and_advance_time(self, target_time):
-        """run all callbacks scheduled between now and target_time"""
-        callbacks_to_run = [x for x in self.all_registered_callbacks if x.run_date_time <= target_time]
+    def _run_callbacks_and_advance_time(self, target_datetime):
+        """run all callbacks scheduled between now and target_datetime"""
+        callbacks_to_run = [x for x in self.all_registered_callbacks if x.run_date_time <= target_datetime]
         # sort so we call them in the order from oldest to newest
         callbacks_to_run.sort(key=lambda cb: cb.run_date_time)
 
@@ -151,4 +177,4 @@ class SchedulerMocks:
             callback()
             self.all_registered_callbacks.remove(callback)
 
-        self.now = target_time
+        self.now = target_datetime
