@@ -138,7 +138,7 @@ class SchedulerMocks:
     ### Test framework functions
     def reset_time(self, time):
         if len(self.all_registered_callbacks) != 0:
-            raise Exception("You can not reset time with pending callbacks")
+            raise RuntimeError("You can not reset time with pending callbacks")
 
         if type(time) == datetime.time:
             time = datetime.datetime.combine(self.now.date(), time)
@@ -171,7 +171,7 @@ class SchedulerMocks:
     def _run_callbacks_and_advance_time(self, target_datetime):
         """run all callbacks scheduled between now and target_datetime"""
         if target_datetime <= self.now:
-            raise Exception("You can not fast forward to a time in the past.")
+            raise ValueError("You can not fast forward to a time in the past.")
         callbacks_to_run = [x for x in self.all_registered_callbacks if x.run_date_time <= target_datetime]
         # sort so we call them in the order from oldest to newest
         callbacks_to_run.sort(key=lambda cb: cb.run_date_time)
@@ -182,3 +182,11 @@ class SchedulerMocks:
             self.all_registered_callbacks.remove(callback)
 
         self.now = target_datetime
+
+
+class Test_run_in:
+    pass
+
+
+class Test_run_at:
+    pass

@@ -37,11 +37,11 @@ class Test_fast_forward:
             assert automation_at_noon.datetime() == datetime.datetime(2010, 1, 15, 11, 0)
 
         def test_to_datetime_in_past_raises_exception(self, time_travel, automation_at_noon):
-            with pytest.raises(Exception):
+            with pytest.raises(ValueError):
                 time_travel.fast_forward().to(datetime.datetime(2009, 1, 15, 11, 0))
 
         def test_to_negative_timedelta_raises_exception(self, time_travel, automation_at_noon):
-            with pytest.raises(Exception):
+            with pytest.raises(ValueError):
                 time_travel.fast_forward().to(datetime.timedelta(minutes=-10))
 
         def test_to_datetime(self, time_travel, automation_at_noon):
@@ -126,6 +126,7 @@ class Test_callback_execution:
         time_travel.fast_forward(10).seconds()
         callback_mock.assert_called_once_with({'arg1': 'asdf', 'arg2': 'qwerty'})
 
+
 class Test_reset_time:
     def test_resets_to_proper_datetime(self, time_travel, automation):
         reset_time = datetime.datetime(2010, 1, 1, 12, 0)
@@ -135,6 +136,6 @@ class Test_reset_time:
     def test_throws_exception_when_reset_time_is_called_with_registed_callbacks(self, time_travel, automation):
         callback_mock = mock.Mock()
         automation.run_in(callback_mock, 1)
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             time_travel.reset_time(datetime.datetime(2010, 1, 1, 12, 0))
 
