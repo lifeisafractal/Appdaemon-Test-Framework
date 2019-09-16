@@ -48,14 +48,17 @@ class TestFastForward:
             time_travel.fast_forward().to(datetime.timedelta(hours=5))
             assert automation_at_noon.datetime() == datetime.datetime(2010, 1, 1, 17, 0)
 
-    class TestSeconds:
-        pass
+    def test_seconds(self, time_travel, automation_at_noon):
+        time_travel.fast_forward(600).seconds()
+        assert automation_at_noon.datetime() == datetime.datetime(2010, 1, 1, 12, 10)
 
-    class TestMinutes:
-        pass
+    def test_minutes(self, time_travel, automation_at_noon):
+        time_travel.fast_forward(90).minutes()
+        assert automation_at_noon.datetime() == datetime.datetime(2010, 1, 1, 13, 30)
 
-    class TestHours:
-        pass
+    def test_hours(self, time_travel, automation_at_noon):
+        time_travel.fast_forward(3).hours()
+        assert automation_at_noon.datetime() == datetime.datetime(2010, 1, 1, 15, 00)
 
 
 def test_callback_not_called_before_timeout(time_travel, automation):
