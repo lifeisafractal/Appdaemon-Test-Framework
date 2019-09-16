@@ -29,7 +29,12 @@ class TestFastForward():
             time_travel.fast_forward().to(datetime.time(15, 0))
             elapsed_time = automation_at_noon.datetime() - start
             assert elapsed_time == datetime.timedelta(hours=3)
-            #time_travel.fast_forward.to()
+
+        def test_to_time_in_past_goes_to_tomorrow(self, time_travel, automation_at_noon):
+            start = automation_at_noon.datetime()
+            time_travel.fast_forward().to(datetime.time(11, 0))
+            elapsed_time = automation_at_noon.datetime() - start
+            assert elapsed_time == datetime.timedelta(hours=23)
 
 def test_callback_not_called_before_timeout(time_travel, automation):
     foo = mock.Mock()
