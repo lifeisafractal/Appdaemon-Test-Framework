@@ -13,6 +13,11 @@ def automation():
     pass
 
 
+class test_fast_forward():
+    class test_to:
+        def test_to_time_in_future(self, time_travel, automation):
+            now = automation.datetime()
+
 def test_callback_not_called_before_timeout(time_travel, automation):
     foo = mock.Mock()
     automation.run_in(foo, 10)
@@ -34,3 +39,5 @@ def test_canceled_timer_does_not_run_callback(time_travel, automation):
     automation.cancel_timer(handle)
     time_travel.fast_forward(10).seconds()
     foo.assert_not_called()
+
+# Make sure they are called in time order
