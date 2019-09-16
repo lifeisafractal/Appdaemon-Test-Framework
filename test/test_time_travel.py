@@ -16,31 +16,46 @@ def automation():
 #class test_time_retrieval_mocks():
 
 
-class TestFastForward():
-    class TestTo():
-        def test_to_time_in_future(self, time_travel, automation):
-            time_travel.reset_time(datetime.datetime(2010, 1, 1, 12, 0))
+class TestFastForward:
+    @staticmethod
+    @pytest.fixture
+    def automation_at_noon(automation, time_travel):
+        time_travel.reset_time(datetime.datetime(2010, 1, 1, 12, 0))
+        return automation
+
+    class TestTo:
+        def test_to_time_in_future(self, time_travel, automation_at_noon):
             time_travel.fast_forward().to(datetime.time(15, 0))
-            assert automation.datetime() == datetime.datetime(2010, 1, 1, 15, 0)
+            assert automation_at_noon.datetime() == datetime.datetime(2010, 1, 1, 15, 0)
 
-        def test_to_time_in_past_goes_to_tomorrow(self, time_travel, automation):
-            time_travel.reset_time(datetime.datetime(2010, 1, 1, 12, 0))
+        def test_to_time_in_past_goes_to_tomorrow(self, time_travel, automation_at_noon):
             time_travel.fast_forward().to(datetime.time(11, 0))
-            assert automation.datetime() == datetime.datetime(2010, 1, 2, 11, 0)
+            assert automation_at_noon.datetime() == datetime.datetime(2010, 1, 2, 11, 0)
 
-        def test_to_datetime(self, time_travel, automation):
-            time_travel.reset_time(datetime.datetime(2010, 1, 1, 12, 0))
+        def test_to_datetime(self, time_travel, automation_at_noon):
             time_travel.fast_forward().to(datetime.datetime(2010, 1, 15, 11, 0))
-            assert automation.datetime() == datetime.datetime(2010, 1, 15, 11, 0)
+            assert automation_at_noon.datetime() == datetime.datetime(2010, 1, 15, 11, 0)
 
-        def test_to_datetime_in_past_raises_exception(self, time_travel, automation):
+        def test_to_datetime_in_past_raises_exception(self, time_travel, automation_at_noon):
             with pytest.raises(Exception):
-                time_travel.reset_time(datetime.datetime(2010, 1, 1, 12, 0))
                 time_travel.fast_forward().to(datetime.datetime(2009, 1, 15, 11, 0))
 
-        def test_to_negative_timedelta_raises_exception(self, time_travel, automation):
+        def test_to_negative_timedelta_raises_exception(self, time_travel, automation_at_noon):
             with pytest.raises(Exception):
                 time_travel.fast_forward().to(datetime.timedelta(minutes=-10))
+
+        def test_to_datetime(self, time_travel, automation_at_noon):
+            time_travel.fast_forward().to(datetime.timedelta(hours=5))
+            assert automation_at_noon.datetime() == datetime.datetime(2010, 1, 1, 17, 0)
+
+    class TestSeconds:
+        pass
+
+    class TestMinutes:
+        pass
+
+    class TestHours:
+        pass
 
 
 def test_callback_not_called_before_timeout(time_travel, automation):
