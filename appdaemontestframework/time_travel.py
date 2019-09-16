@@ -137,11 +137,13 @@ class SchedulerMocks:
 
     ### Test framework functions
     def reset_time(self, time):
+        if len(self.all_registered_callbacks) != 0:
+            raise Exception("You can not reset time with pending callbacks")
+
         if type(time) == datetime.time:
             time = datetime.datetime.combine(self.now.date(), time)
         self.now = time
         self.start_time = self.now
-        assert len(self.all_registered_callbacks) == 0, "You can not reset time with pending callbacks"
 
     def elapsed_seconds(self):
         return (self.now - self.start_time).total_seconds()

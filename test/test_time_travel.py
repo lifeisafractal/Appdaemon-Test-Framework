@@ -121,8 +121,20 @@ class Test_callback_execution:
         assert expected_call_times == time_when_called
 
     def test_callback_called_with_correct_args(self, time_travel, automation):
-        pass
+        callback_mock = mock.Mock()
+        automation.run_in(callback_mock, 1, arg1='asdf', arg2='qwerty')
+        time_travel.fast_forward(10).seconds()
+        callback_mock.assert_called_once_with({'arg1': 'asdf', 'arg2': 'qwerty'})
 
 class Test_reset_time:
-    def test_throws_exception_when_reset_time_is_called_with_registed_callbacks(self):
-        pass
+    def test_resets_to_proper_datetime(self, time_travel, automation):
+        reset_time = datetime.datetime(2010, 1, 1, 12, 0)
+        time_travel.reset_time(reset_time)
+        assert automation.datetime() == reset_time
+
+    def test_throws_exception_when_reset_time_is_called_with_registed_callbacks(self, time_travel, automation):
+        callback_mock = mock.Mock()
+        automation.run_in(callback_mock, 1)
+        with pytest.raises(Exception):
+            time_travel.reset_time(datetime.datetime(2010, 1, 1, 12, 0))
+
