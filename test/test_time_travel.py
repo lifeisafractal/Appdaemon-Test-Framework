@@ -16,14 +16,14 @@ def automation():
 #class test_time_retrieval_mocks():
 
 
-class TestFastForward:
+class Test_fast_forward:
     @staticmethod
     @pytest.fixture
     def automation_at_noon(automation, time_travel):
         time_travel.reset_time(datetime.datetime(2010, 1, 1, 12, 0))
         return automation
 
-    class TestTo:
+    class Test_to:
         def test_to_time_in_future(self, time_travel, automation_at_noon):
             time_travel.fast_forward().to(datetime.time(15, 0))
             assert automation_at_noon.datetime() == datetime.datetime(2010, 1, 1, 15, 0)
@@ -60,6 +60,25 @@ class TestFastForward:
         time_travel.fast_forward(3).hours()
         assert automation_at_noon.datetime() == datetime.datetime(2010, 1, 1, 15, 00)
 
+
+class Test_run_in:
+    def test_callbacks_are_run_in_time_order(self, time_travel, automation):
+        first_mock = mock.Mock()
+        second_mock = mock.Mock()
+        third_mock = mock.Mock()
+        manager = mock.Mock()
+        manager.attach_mock(first_mock, 'first_mock')
+        manager.attach_mock(second_mock, 'second_mock')
+        manager.attach_mock(third_mock, 'third_mock')
+
+        automation.run_in(second_mock, 20)
+        automation.run_in(third_mock, 30)
+        automation.run_in(first_mock, 10)
+
+        time_travel.fast_forward(30).seconds()
+
+        expected_call_order = [mock.call.first_mock({}), mock.call.second_mock({}), mock.call.third_mock({})]
+        assert manager.mock_calls == expected_call_order
 
 def test_callback_not_called_before_timeout(time_travel, automation):
     foo = mock.Mock()
