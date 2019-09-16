@@ -41,6 +41,8 @@ def patch_hass():
         'set_state',
         'get_state',
         'time',
+        'date',
+        'datetime',
         'args',  # Not a function, attribute. But same patching logic
 
         # Interactions functions

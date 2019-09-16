@@ -1,4 +1,5 @@
 import uuid
+import datetime
 
 class TimeTravelWrapper:
     """
@@ -8,11 +9,24 @@ class TimeTravelWrapper:
     def __init__(self, hass_functions):
         self.scheduler_mocks = SchedulerMocks()
 
-        run_in_magic_mock = hass_functions['run_in']
-        run_in_magic_mock.side_effect = self.scheduler_mocks.run_in_mock
+        hass_functions['time'].side_effect = self.scheduler_mocks.time_mock
+        hass_functions['date'].side_effect = self.scheduler_mocks.date_mock
+        hass_functions['datetime'].side_effect = self.scheduler_mocks.datetime_mock
+        hass_functions['run_in'].side_effect = self.scheduler_mocks.run_in_mock
+        hass_functions['cancel_timer'].side_effect = self.scheduler_mocks.cancel_timer_mock
 
-        cancel_timer_magic_mock = hass_functions['cancel_timer']
-        cancel_timer_magic_mock.side_effect = self.scheduler_mocks.cancel_timer_mock
+    def reset_time(self, time):
+        """Rest the time of the simulation. You can not call this once you have registed any callbacks
+
+        if time is a datetime, it will set to that absolution time.
+        if time is just a time, it will set the time, but leave the day the same.
+
+        Format:
+        > time_travel.reset_time(datetime.datetime(2019, 04, 05, 14, 13))
+        > # or if you don't care about the date
+        > time_travel.reset_time(datetime.time(14, 13))
+        """
+        self.scheduler_mocks.reset_time(time)
 
     def fast_forward(self, duration):
         """
@@ -46,10 +60,10 @@ class TimeTravelWrapper:
 
 
     def _fast_forward_seconds(self, seconds_to_fast_forward):
-        self.scheduler_mocks.fast_forward(seconds_to_fast_forward)
+        self.scheduler_mocks.fast_forward(datetime.timedelta(seconds=seconds_to_fast_forward))
 
     def _assert_current_time_seconds(self, expected_seconds_from_start):
-        assert self.scheduler_mocks.now == expected_seconds_from_start
+        assert self.scheduler_mocks.elapsed_seconds() == expected_seconds_from_start
 
 
 class UnitsWrapper:
@@ -57,62 +71,84 @@ class UnitsWrapper:
         self.duration = duration
         self.function_with_arg_in_seconds = function_with_arg_in_seconds
 
+    def hours(self):
+        self.function_with_arg_in_seconds(self.duration * 60 * 60)
+
     def minutes(self):
         self.function_with_arg_in_seconds(self.duration * 60)
 
     def seconds(self):
         self.function_with_arg_in_seconds(self.duration)
 
+
+class CallbackInfo:
+    """Class to hold info about a scheduled callback"""
+    def __init__(self, callback_function, kwargs, run_date_time):
+        self.handle = str(uuid.uuid4())
+        self.run_date_time = run_date_time
+        self.callback_function = callback_function
+        self.kwargs = kwargs
+
+    def __call__(self):
+        self.callback_function(self.kwargs)
+
+
 class SchedulerMocks:
     """Class to provide functional mocks for the AppDaemon HASS scheduling functions"""
     def __init__(self):
         self.all_registered_callbacks = []
-        self.now = 0
+        # Default to Jan 1st, 2015 12:00AM
+        self.reset_time(datetime.datetime(2015, 1, 1, 0, 0))
+
+    ### Hass mock functions
+    def time_mock(self):
+        return self.now.time()
+
+    def date_mock(self):
+        return self.now.date()
+
+    def datetime_mock(self):
+        return self.now
 
     def run_in_mock(self, callback, delay_in_s, **kwargs):
-        handle = str(uuid.uuid4())
-        self.all_registered_callbacks.append({
-            'callback_function': callback,
-            'delay_in_s': delay_in_s,
-            'registered_at': self.now,
-            'kwargs': kwargs,
-            'handle': handle
-        })
-        return handle
+        run_date_time = self.now + datetime.timedelta(seconds=delay_in_s)
+        new_callback = CallbackInfo(callback, kwargs, run_date_time)
+        self.all_registered_callbacks.append(new_callback)
+        return new_callback.handle
 
     def cancel_timer_mock(self, handle):
         for callback in self.all_registered_callbacks:
-            if callback['handle'] == handle:
+            if callback.handle == handle:
                 self.all_registered_callbacks.remove(callback)
 
-    def fast_forward(self, seconds):
-        self.now += seconds
+    ### Test framework functions
+    def reset_time(self, time):
+        if type(time) == datetime.time:
+            time = datetime.datetime.combine(self.now.date(), time)
+        self.now = time
+        self.start_time = self.now
+        assert len(self.all_registered_callbacks) == 0, "You can not reset time with pending callbacks"
 
-        self._run_callbacks()
+    def elapsed_seconds(self):
+        return (self.now - self.start_time).total_seconds()
 
-    def _run_callbacks(self):
-        callback_run = []
+    def cancel_all_callbacks(self):
+        """Clears all currently registed callbacks"""
+        self.all_registered_callbacks = []
 
-        def _should_run(callback_registration):
-            delay_in_s = callback_registration['delay_in_s']
-            registered_at = callback_registration['registered_at']
+    def fast_forward(self, time_delta):
+        self._run_callbacks_and_advance_time(self.now + time_delta)
 
-            scheduled_time = registered_at + delay_in_s
-            scheduled_now_or_before = scheduled_time <= self.now
+    ### Internal functions
+    def _run_callbacks_and_advance_time(self, target_time):
+        """run all callbacks scheduled between now and target_time"""
+        callbacks_to_run = [x for x in self.all_registered_callbacks if x.run_date_time <= target_time]
+        # sort so we call them in the order from oldest to newest
+        callbacks_to_run.sort(key=lambda cb: cb.run_date_time)
 
-            return scheduled_now_or_before
+        for callback in callbacks_to_run:
+            self.now = callback.run_date_time
+            callback()
+            self.all_registered_callbacks.remove(callback)
 
-        def _run(callback_registration):
-            kwargs = callback_registration['kwargs']
-            callback_registration['callback_function'](kwargs)
-            callback_run.append(callback_registration)
-
-        def _remove_all_run():
-            for registration in callback_run:
-                self.all_registered_callbacks.remove(registration)
-
-        for registration in self.all_registered_callbacks:
-            if _should_run(registration):
-                _run(registration)
-
-        _remove_all_run()
+        self.now = target_time

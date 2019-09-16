@@ -111,6 +111,7 @@ class Bathroom(hass.Hass):
         }
 
     def start_initial_behavior(self):
+        print(self.time())
         current_hour = self.time().hour
         if current_hour < 4 or current_hour >= 20:
             self.start_behavior('evening')

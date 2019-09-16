@@ -21,10 +21,10 @@ def test_callback_not_called_before_timeout(time_travel, automation):
 
 
 def test_callback_called_after_timeout(time_travel, automation):
-    foo = mock.Mock()
-    automation.run_in(foo, 10)
+    scheduled_callback = mock.Mock(name="Scheduled Callback")
+    automation.run_in(scheduled_callback, 10)
     time_travel.fast_forward(20).seconds()
-    foo.assert_called()
+    scheduled_callback.assert_called()
 
 
 def test_canceled_timer_does_not_run_callback(time_travel, automation):

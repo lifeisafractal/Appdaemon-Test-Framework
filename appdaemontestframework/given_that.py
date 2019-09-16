@@ -7,7 +7,7 @@ class StateNotSetError(AppdaemonTestFrameworkError):
     def __init__(self, entity_id):
         super().__init__(f"""
         State for entity: '{entity_id}' was never set!
-        Please make sure to set the state with `given_that.state_of({entity_id}).is_set_to(STATE)` 
+        Please make sure to set the state with `given_that.state_of({entity_id}).is_set_to(STATE)`
         before trying to access the mocked state
         """)
 
@@ -78,8 +78,8 @@ class GivenThatWrapper:
 
         return IsWrapper()
 
-    def time_is(self, time_as_datetime):
-        self.hass_functions['time'].return_value = time_as_datetime
+    # def time_is(self, time_as_datetime):
+    #     self.hass_functions['time'].return_value = time_as_datetime
 
     def mock_functions_are_cleared(self, clear_mock_states=False, clear_mock_passed_args=False):
         for mocked_function in self.hass_functions.values():
