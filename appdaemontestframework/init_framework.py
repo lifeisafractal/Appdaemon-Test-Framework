@@ -23,11 +23,11 @@ def patch_hass():
         'run_in',
         'run_once',
         'run_at',
-        'run_daily',
-        'run_hourly',
-        'run_minutely',
-        'run_every',
         'cancel_timer',
+
+        # So we can reuse real Hass object code, we mock out a few internal functions
+        'AD.log',
+        'AD.sched.insert_schedule',
 
         # Sunrise and sunset functions
         'run_at_sunrise',
@@ -40,9 +40,8 @@ def patch_hass():
         # State functions / attr
         'set_state',
         'get_state',
-        'time',
-        'date',
-        'datetime',
+        'get_now',
+        'get_now_ts',
         'args',  # Not a function, attribute. But same patching logic
 
         # Interactions functions
