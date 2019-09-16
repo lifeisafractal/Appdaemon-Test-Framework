@@ -13,6 +13,7 @@ class TimeTravelWrapper:
         hass_functions['date'].side_effect = self.scheduler_mocks.date_mock
         hass_functions['datetime'].side_effect = self.scheduler_mocks.datetime_mock
         hass_functions['run_in'].side_effect = self.scheduler_mocks.run_in_mock
+        hass_functions['run_every'].side_effect = self.scheduler_mocks.run_every_mock
         hass_functions['cancel_timer'].side_effect = self.scheduler_mocks.cancel_timer_mock
 
     def reset_time(self, time):
@@ -126,9 +127,13 @@ class SchedulerMocks:
 
     def run_in_mock(self, callback, delay_in_s, **kwargs):
         run_date_time = self.now + datetime.timedelta(seconds=delay_in_s)
-        new_callback = CallbackInfo(callback, kwargs, run_date_time)
-        self.all_registered_callbacks.append(new_callback)
-        return new_callback.handle
+        return self._queue_calllback(CallbackInfo(callback, kwargs, run_date_time))
+
+    def run_daily_mock(self, callback, delay_in_s, **kwargs):
+        pass
+
+    def run_every_mock(self, callback, start, interval, **kwargs):
+        pass
 
     def cancel_timer_mock(self, handle):
         for callback in self.all_registered_callbacks:
@@ -168,6 +173,13 @@ class SchedulerMocks:
         self._run_callbacks_and_advance_time(target_datetime)
 
     ### Internal functions
+    def _queue_calllback(self, new_callback):
+        """queue a new callback and return its handle"""
+        if new_callback.run_date_time < self.now:
+            raise ValueError("Can not schedule events in the past")
+        self.all_registered_callbacks.append(new_callback)
+        return new_callback.handle
+
     def _run_callbacks_and_advance_time(self, target_datetime):
         """run all callbacks scheduled between now and target_datetime"""
         if target_datetime <= self.now:

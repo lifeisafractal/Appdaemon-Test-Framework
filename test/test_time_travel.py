@@ -139,3 +139,9 @@ class Test_reset_time:
         with pytest.raises(RuntimeError):
             time_travel.reset_time(datetime.datetime(2010, 1, 1, 12, 0))
 
+
+class Test_run_daily:
+    def test_thing(self, time_travel, automation):
+        def func(kwargs):
+            pass
+        automation.run_daily(func, start=datetime.time(12))
