@@ -18,23 +18,25 @@ def automation():
 
 class TestFastForward():
     class TestTo():
-        @staticmethod
-        @pytest.fixture
-        def automation_at_noon(automation, time_travel):
-            time_travel.reset_time(datetime.time(12,0))
-            return automation
-
-        def test_to_time_in_future(self, time_travel, automation_at_noon):
-            start = automation_at_noon.datetime()
+        def test_to_time_in_future(self, time_travel, automation):
+            time_travel.reset_time(datetime.datetime(2010, 1, 1, 12, 0))
             time_travel.fast_forward().to(datetime.time(15, 0))
-            elapsed_time = automation_at_noon.datetime() - start
-            assert elapsed_time == datetime.timedelta(hours=3)
+            assert automation.datetime() == datetime.datetime(2010, 1, 1, 15, 0)
 
-        def test_to_time_in_past_goes_to_tomorrow(self, time_travel, automation_at_noon):
-            start = automation_at_noon.datetime()
+        def test_to_time_in_past_goes_to_tomorrow(self, time_travel, automation):
+            time_travel.reset_time(datetime.datetime(2010, 1, 1, 12, 0))
             time_travel.fast_forward().to(datetime.time(11, 0))
-            elapsed_time = automation_at_noon.datetime() - start
-            assert elapsed_time == datetime.timedelta(hours=23)
+            assert automation.datetime() == datetime.datetime(2010, 1, 2, 11, 0)
+
+        def test_to_datetime(self, time_travel, automation):
+            time_travel.reset_time(datetime.datetime(2010, 1, 1, 12, 0))
+            time_travel.fast_forward().to(datetime.datetime(2010, 1, 15, 11, 0))
+            assert automation.datetime() == datetime.datetime(2010, 1, 15, 11, 0)
+
+        def test_to_datetime_in_past_raises_exception(self, time_travel, automation):
+            with pytest.raises(Exception):
+                time_travel.reset_time(datetime.datetime(2010, 1, 1, 12, 0))
+                time_travel.fast_forward().to(datetime.datetime(2009, 1, 15, 11, 0))
 
 def test_callback_not_called_before_timeout(time_travel, automation):
     foo = mock.Mock()

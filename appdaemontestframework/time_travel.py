@@ -160,7 +160,7 @@ class SchedulerMocks:
             else:
                 # handle wrap around to next day if time is in the past already
                 target_date = self.now.date() + datetime.timedelta(days=1)
-                target_datetime = datetime.combine(target_date, time)
+                target_datetime = datetime.datetime.combine(target_date, time)
         elif type(time) == datetime.datetime:
             target_datetime = time
         self._run_callbacks_and_advance_time(target_datetime)
@@ -168,6 +168,8 @@ class SchedulerMocks:
     ### Internal functions
     def _run_callbacks_and_advance_time(self, target_datetime):
         """run all callbacks scheduled between now and target_datetime"""
+        if target_datetime <= self.now:
+            raise Exception("You can not fast forward to a time in the past.")
         callbacks_to_run = [x for x in self.all_registered_callbacks if x.run_date_time <= target_datetime]
         # sort so we call them in the order from oldest to newest
         callbacks_to_run.sort(key=lambda cb: cb.run_date_time)
