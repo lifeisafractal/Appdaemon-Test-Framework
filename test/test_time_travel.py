@@ -1,6 +1,7 @@
 from appdaemon.plugins.hass.hassapi import Hass
 from appdaemontestframework import automation_fixture
 import mock
+import pytest
 
 
 class MockAutomation(Hass):
@@ -12,11 +13,14 @@ class MockAutomation(Hass):
 def automation():
     pass
 
+class test_time_retrieval_mocks():
+
 
 class test_fast_forward():
     class test_to:
         def test_to_time_in_future(self, time_travel, automation):
             now = automation.datetime()
+            #time_travel.fast_forward.to()
 
 def test_callback_not_called_before_timeout(time_travel, automation):
     foo = mock.Mock()
