@@ -38,6 +38,11 @@ class TestFastForward():
                 time_travel.reset_time(datetime.datetime(2010, 1, 1, 12, 0))
                 time_travel.fast_forward().to(datetime.datetime(2009, 1, 15, 11, 0))
 
+        def test_to_negative_timedelta_raises_exception(self, time_travel, automation):
+            with pytest.raises(Exception):
+                time_travel.fast_forward().to(datetime.timedelta(minutes=-10))
+
+
 def test_callback_not_called_before_timeout(time_travel, automation):
     foo = mock.Mock()
     automation.run_in(foo, 10)
