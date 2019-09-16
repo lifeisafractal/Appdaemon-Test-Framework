@@ -20,14 +20,10 @@ def patch_hass():
         'error',
 
         # Scheduler callback registrations functions
-        'run_in',
-        'run_once',
-        'run_at',
+        # 'run_in',
+        # 'run_once',
+        # 'run_at',
         'cancel_timer',
-
-        # So we can reuse real Hass object code, we mock out a few internal functions
-        'AD.log',
-        'AD.sched.insert_schedule',
 
         # Sunrise and sunset functions
         'run_at_sunrise',
@@ -68,6 +64,12 @@ def patch_hass():
         patched_function.return_value = None
         hass_functions[function_name] = patched_function
 
+    patch_function = mock.patch.object(AD, 'insert_schedule', create=True)
+    patches.append(patch_function)
+    patched_function = patch_function.start()
+    patched_function.return_value = None
+    hass_functions['AD.insert_schedule'] = patched_function
+
     def unpatch_callback():
         for patch in patches:
             patch.stop()
@@ -100,5 +102,19 @@ def _mock_hass_init(hass_functions):
     """Mock the Hass object init and set up class attributes that are used by automations"""
     def hass_init_mock(self, ad, name, logger, error, args, config, app_config, global_vars):
         self.name = name
+        self.AD = AD()
 
     hass_functions['__init__'].side_effect = hass_init_mock
+
+
+class AD:
+    def __init__(self):
+        pass
+
+    def log(self, msg, *args, **kwargs):
+        pass
+
+    def insert_schedule(self, name, utc, callback, repeat, type_, **kwargs):
+        print("Called")
+        assert False
+        pass

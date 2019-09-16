@@ -1,6 +1,7 @@
 import uuid
 import datetime
 
+
 class TimeTravelWrapper:
     """
     AppDaemon Test Framework Utility to simulate going forward in time
@@ -13,12 +14,12 @@ class TimeTravelWrapper:
         # hass_functions['date'].side_effect = self.scheduler_mocks.date_mock
         # hass_functions['datetime'].side_effect = self.scheduler_mocks.datetime_mock
         mock_funcs = {
-            'run_in': self.scheduler_mocks.run_in_mock,
+            #'run_in': self.scheduler_mocks.run_in_mock,
             #s'run_every': self.scheduler_mocks.run_every_mock,
             'cancel_timer': self.scheduler_mocks.cancel_timer_mock,
             'get_now': self.scheduler_mocks.get_now_mock,
             'get_now_ts': self.scheduler_mocks.get_now_ts_mock,
-            'AD.sched.insert_schedule': self.scheduler_mocks.insert_schedule_mock,
+            'AD.insert_schedule': self.scheduler_mocks.insert_schedule_mock,
         }
         for hass_function, mock in mock_funcs.items():
             hass_functions[hass_function].side_effect = mock
@@ -129,8 +130,9 @@ class SchedulerMocks:
     def get_now_ts_mock(self):
         return self.now.timestamp()
 
-    def insert_schedule_mock(self, name, aware_dt, callback, repeat, type_, **kwargs):
-        self._queue_calllback(callback, kwargs, aware_dt)
+    def insert_schedule_mock(self, name, utc, callback, repeat, type_, **kwargs):
+        aware_dt = datetime.datetime.fromtimestamp(utc)
+        return self._queue_calllback(callback, kwargs, aware_dt)
 
     def run_in_mock(self, callback, delay_in_s, **kwargs):
         run_date_time = self.now + datetime.timedelta(seconds=delay_in_s)
@@ -203,11 +205,3 @@ class SchedulerMocks:
             self.all_registered_callbacks.remove(callback)
 
         self.now = target_datetime
-
-
-class Test_run_in:
-    pass
-
-
-class Test_run_at:
-    pass
