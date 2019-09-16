@@ -156,7 +156,7 @@ class SchedulerMocks:
             target_datetime = self.now + time
         elif type(time) == datetime.time:
             if time > self.now.time():
-                target_time = datetime.datetime.combine(time.now.date, time)
+                target_datetime = datetime.datetime.combine(self.now.date(), time)
             else:
                 # handle wrap around to next day if time is in the past already
                 target_date = self.now.date() + datetime.timedelta(days=1)
