@@ -20,9 +20,6 @@ def patch_hass():
         'error',
 
         # Scheduler callback registrations functions
-        # 'run_in',
-        # 'run_once',
-        # 'run_at',
         'cancel_timer',
 
         # Sunrise and sunset functions
@@ -64,6 +61,7 @@ def patch_hass():
         patched_function.return_value = None
         hass_functions[function_name] = patched_function
 
+    # Patch the AD object
     patch_function = mock.patch.object(AD, 'insert_schedule', create=True)
     patches.append(patch_function)
     patched_function = patch_function.start()
@@ -108,13 +106,8 @@ def _mock_hass_init(hass_functions):
 
 
 class AD:
-    def __init__(self):
-        pass
-
     def log(self, msg, *args, **kwargs):
         pass
 
     def insert_schedule(self, name, utc, callback, repeat, type_, **kwargs):
-        print("Called")
-        assert False
         pass

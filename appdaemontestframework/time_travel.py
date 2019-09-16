@@ -10,12 +10,7 @@ class TimeTravelWrapper:
     def __init__(self, hass_functions):
         self.scheduler_mocks = SchedulerMocks()
 
-        # hass_functions['time'].side_effect = self.scheduler_mocks.time_mock
-        # hass_functions['date'].side_effect = self.scheduler_mocks.date_mock
-        # hass_functions['datetime'].side_effect = self.scheduler_mocks.datetime_mock
         mock_funcs = {
-            #'run_in': self.scheduler_mocks.run_in_mock,
-            #s'run_every': self.scheduler_mocks.run_every_mock,
             'cancel_timer': self.scheduler_mocks.cancel_timer_mock,
             'get_now': self.scheduler_mocks.get_now_mock,
             'get_now_ts': self.scheduler_mocks.get_now_ts_mock,
@@ -133,17 +128,6 @@ class SchedulerMocks:
     def insert_schedule_mock(self, name, utc, callback, repeat, type_, **kwargs):
         aware_dt = datetime.datetime.fromtimestamp(utc)
         return self._queue_calllback(callback, kwargs, aware_dt)
-
-    def run_in_mock(self, callback, delay_in_s, **kwargs):
-        run_date_time = self.now + datetime.timedelta(seconds=delay_in_s)
-        return self._queue_calllback(callback, kwargs, run_date_time)
-
-    def run_daily_mock(self, callback, delay_in_s, **kwargs):
-        pass
-
-    def run_every_mock(self, callback, start, interval, **kwargs):
-        assert False
-        pass
 
     def cancel_timer_mock(self, handle):
         for callback in self.all_registered_callbacks:
